@@ -3,10 +3,12 @@
 
 import { useState } from "react";
 import { syncStripeProducts } from "../server/syncStripeProducts";
+import { useRouter } from "next/navigation";
 
 export default function SyncProductsButton() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSync = async () => {
     setLoading(true);
@@ -17,6 +19,7 @@ export default function SyncProductsButton() {
 
       if (result.success) {
         setMessage("Products and prices synced successfully!");
+        router.refresh();
       } else {
         setMessage(result.message || "Failed to sync products.");
       }
