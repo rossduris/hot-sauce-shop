@@ -2,12 +2,14 @@ import { auth } from "@/lib/auth";
 import LoginButton from "./components/LoginButton";
 import LogoutButton from "./components/LogoutButton";
 import { User } from "lucide-react";
+import ProductList from "./components/ProductList";
+import SyncProductsButton from "./components/SyncProductsButton";
 
 export default async function Home() {
   const session = await auth();
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <main className="min-h-screen bg-gradient-to-b from-gray-600 to-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-center min-h-screen py-12">
           {session?.user ? (
@@ -34,7 +36,11 @@ export default async function Home() {
                   </p>
                   {session.user.role && (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      ADMIN
+                      {session.user.email === process.env.ADMIN_EMAIL ? (
+                        <SyncProductsButton />
+                      ) : (
+                        "USER"
+                      )}
                     </span>
                   )}
                 </div>
@@ -57,6 +63,9 @@ export default async function Home() {
               </div>
             </div>
           )}
+          <div className=" bg-white p-2 rounded-lg mt-2 w-full">
+            <ProductList />
+          </div>
         </div>
       </div>
     </main>

@@ -8,6 +8,20 @@
       "when": 1731630045143,
       "tag": "0000_groovy_fantastic_four",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1731635098406,
+      "tag": "0001_real_jack_murdock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1731637860977,
+      "tag": "0002_brown_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

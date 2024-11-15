@@ -4,13 +4,14 @@ import {
   timestamp,
   primaryKey,
   integer,
-  uuid,
+  boolean,
   doublePrecision,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-// Auth.js required tables
+// Users Table
 export const users = pgTable("user", {
   id: text("id")
     .primaryKey()
@@ -23,6 +24,7 @@ export const users = pgTable("user", {
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+// Accounts Table
 export const accounts = pgTable(
   "account",
   {
@@ -47,92 +49,97 @@ export const accounts = pgTable(
   })
 );
 
-export const sessions = pgTable("session", {
-  sessionToken: text("sessionToken").primaryKey(),
-  userId: text("userId")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  expires: timestamp("expires", { mode: "date" }).notNull(),
-});
-
-export const verificationTokens = pgTable(
-  "verificationToken",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull(),
-    expires: timestamp("expires", { mode: "date" }).notNull(),
-  },
-  (table) => ({
-    compoundKey: primaryKey({ columns: [table.identifier, table.token] }),
-  })
-);
-
-// Your custom tables
+// Products Table
 export const products = pgTable("product", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
+  stripeId: text("stripeId").unique(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  priceId: text("priceId").unique().notNull(),
   category: text("category"),
   stock: integer("stock").default(0),
+  metadata: jsonb("metadata"), // Store additional metadata as JSON if supported
+  images: jsonb("images"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+// Prices Table
+export const prices = pgTable("price", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => nanoid()),
+  stripePriceId: text("stripePriceId").unique().notNull(),
+  productId: text("productId")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  unitAmount: integer("unitAmount").notNull(),
+  currency: text("currency").notNull(),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+// Variants Table
 export const variants = pgTable("variant", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
   productId: text("productId")
     .notNull()
-    .references(() => products.id),
+    .references(() => products.id, { onDelete: "cascade" }),
+  priceId: text("priceId")
+    .notNull()
+    .references(() => prices.id, { onDelete: "cascade" }),
   size: text("size"),
   spiciness: integer("spiciness"),
-  priceId: text("priceId").notNull(),
   stock: integer("stock").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+// Orders Table
 export const orders = pgTable("order", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  userId: text("userId").references(() => users.id),
-  stripeSessionId: text("stripeSessionId"),
+  userId: text("userId").references(() => users.id, { onDelete: "set null" }), // Use set null if you don't want cascading deletes
+  stripeCheckoutSessionId: text("stripeCheckoutSessionId"), // Updated name for clarity
+  stripeStatus: text("stripeStatus"), // Optional: Track Stripe payment status
   totalAmount: doublePrecision("totalAmount").notNull(),
   status: text("status").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
+// Order Items Table
 export const orderItems = pgTable("orderItem", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
   orderId: text("orderId")
     .notNull()
-    .references(() => orders.id),
+    .references(() => orders.id, { onDelete: "cascade" }),
   productId: text("productId")
     .notNull()
     .references(() => products.id),
   quantity: integer("quantity").notNull(),
-  price: doublePrecision("price").notNull(),
-  subtotal: doublePrecision("subtotal").notNull(),
+  price: integer("price").notNull(), // Use integer for currency in cents
+  subtotal: integer("subtotal").notNull(),
 });
 
+// Reviews Table
 export const reviews = pgTable("review", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => nanoid()),
   productId: text("productId")
     .notNull()
-    .references(() => products.id),
+    .references(() => products.id, { onDelete: "cascade" }),
   userId: text("userId")
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: "set null" }),
   rating: integer("rating").notNull(),
   comment: text("comment"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -141,7 +148,6 @@ export const reviews = pgTable("review", {
 // Define relationships
 export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
-  sessions: many(sessions),
   orders: many(orders),
   reviews: many(reviews),
 }));
