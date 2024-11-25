@@ -59,8 +59,10 @@ export const products = pgTable("product", {
   description: text("description").notNull(),
   category: text("category"),
   stock: integer("stock").default(0),
-  metadata: jsonb("metadata"), // Store additional metadata as JSON if supported
+  metadata: jsonb("metadata"),
   images: jsonb("images"),
+  isActive: boolean("isActive").default(true).notNull(),
+  isArchived: boolean("isArchived").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });

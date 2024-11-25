@@ -13,7 +13,13 @@ export async function syncStripeProducts() {
     // Fetch products from Stripe
     const stripeProducts = await stripe.products.list({ limit: 100 });
 
+    console.log(stripeProducts);
+
     for (const stripeProduct of stripeProducts.data) {
+      if (!stripeProduct.active) {
+        continue;
+      }
+
       // Start a transaction for each product to ensure consistency
       await db.transaction(async (tx) => {
         // Check if the product already exists in the database
@@ -32,6 +38,8 @@ export async function syncStripeProducts() {
               name: stripeProduct.name,
               description: stripeProduct.description || "",
               metadata: stripeProduct.metadata,
+              isActive: true,
+              images: stripeProduct.images,
             })
             .where(eq(products.stripeId, stripeProduct.id));
           productId = existingProduct[0].id;
@@ -45,6 +53,7 @@ export async function syncStripeProducts() {
               description: stripeProduct.description || "",
               metadata: stripeProduct.metadata,
               images: stripeProduct.images,
+              isActive: true,
             })
             .returning({ id: products.id });
 

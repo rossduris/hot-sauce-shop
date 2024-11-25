@@ -18,6 +18,7 @@ export async function getProducts() {
         createdAt: products.createdAt,
         images: products.images,
       })
+
       .from(products);
 
     // Fetch all prices

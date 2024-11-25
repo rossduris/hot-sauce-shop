@@ -9,7 +9,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
-
   let event: Stripe.Event;
 
   try {
@@ -27,24 +26,42 @@ export async function POST(req: Request) {
     );
   }
 
-  // Handle the event
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
+      // Get line items from the session
+      const lineItems = await stripe.checkout.sessions.listLineItems(
+        session.id
+      );
+
+      // Create the order
       const orderData = {
         id: session.id,
-        userId: session.client_reference_id || null, // Fallback to null if guest checkout
-        stripeCheckoutSessionId: session.id, // Ensure stripeCheckoutSessionId is set
+        userId: session.client_reference_id || null,
+        stripeCheckoutSessionId: session.id,
         stripeStatus: session.payment_status || "unpaid",
         totalAmount: session.amount_total || 0,
-        status: "paid", // Assuming this is the final state
+        status: "paid",
         createdAt: new Date(),
       };
 
-      const insertedOrder = await db.insert(orders).values(orderData);
+      // Insert order first
+      await db.insert(orders).values(orderData);
 
-      console.log("Order saved to database:", insertedOrder);
+      // Insert order items
+      const orderItemsData = lineItems.data.map((item) => ({
+        id: crypto.randomUUID(), // or use nanoid() if you prefer
+        orderId: session.id,
+        productId: item.price?.product as string, // Assuming product ID is stored in metadata
+        quantity: item.quantity || 1,
+        price: item.price?.unit_amount || 0,
+        subtotal: (item.price?.unit_amount || 0) * (item.quantity || 1),
+      }));
+
+      await db.insert(orderItems).values(orderItemsData);
+
+      console.log("Order and items saved to database");
     }
 
     return NextResponse.json({ received: true });

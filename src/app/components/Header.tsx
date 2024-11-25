@@ -12,7 +12,9 @@ export const Header = async () => {
   const session = await auth();
   return (
     <header className=" w-full flex justify-between">
-      <Link href="/">HOT SAUCE ROSS</Link>
+      <Link href="/" className=" text-3xl m-4">
+        HOT SAUCE ROSS
+      </Link>
       {session?.user ? (
         <div className="w-full max-w-md">
           <div className="bg-white shadow-lg rounded-2xl p-8 space-y-6">
@@ -53,15 +55,7 @@ export const Header = async () => {
         </div>
       ) : (
         <div className="text-center space-y-6">
-          <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">
-            Welcome to Our Platform
-          </h1>
-          <p className="max-w-2xl mx-auto text-lg text-gray-500">
-            Get started by signing in with your account
-          </p>
-          <div className="mt-8">
-            <LoginButton />
-          </div>
+          <div className="mt-8">{/* <LoginButton /> */}</div>
         </div>
       )}
       <ShoppingCart />
